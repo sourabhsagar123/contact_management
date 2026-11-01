@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusContacts — ADSA Contact Management</title>
+  <meta name="description" content="Minimalist, modern Contact Management System powered by Trie, AVL Tree, Custom Hash Map, Max-Heap, and Graph BFS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
+</head>
+<body>
+
+  <!-- Minimalist Sticky Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <span class="brand-name">Nexus</span><span class="brand-name-light">Contacts</span>
+        </div>
+        <span class="status-chip">ADSA v2</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-reset-data" class="btn btn-ghost" title="Re-seed sample contacts into database & memory">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>Reset Demo</span>
+        </button>
+
+        <button id="btn-open-adsa-modal" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>ADSA Inspector</span>
+        </button>
+
+        <button id="btn-open-add-modal" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Contact</span>
+        </button>
+
+        <button id="btn-theme-toggle" class="btn-icon" title="Toggle theme">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-shell">
+
+    <!-- Primary Content Area -->
+    <div class="content-area">
+
+      <!-- Minimalist Search & Filter Hub -->
+      <section class="search-hub">
+        <div class="search-command-row">
+          <div class="search-input-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+              type="text" 
+              id="search-input" 
+              class="search-input" 
+              placeholder="Search contacts by name, phone, or company..." 
+              autocomplete="off"
+            >
+            <span class="search-kbd-hint">⌘K</span>
+
+            <!-- Trie Autocomplete Popup -->
+            <div id="autocomplete-dropdown" class="autocomplete-popover"></div>
+          </div>
+
+          <div class="search-algo-selector">
+            <select id="search-mode-select" class="select-clean" title="Select Search Algorithm">
+              <option value="autocomplete">Trie Autocomplete (O(L+M))</option>
+              <option value="fuzzy">Fuzzy Typo Search (Levenshtein DP)</option>
+              <option value="linear">Linear Scan Filter (O(N))</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Filter & View Controls -->
+        <div class="filter-controls-row">
+          <nav class="category-tabs" aria-label="Category Filters">
+            <button class="cat-tab active" data-category="All">All Contacts <span id="stat-total-contacts" class="count-badge">26</span></button>
+            <button class="cat-tab" data-category="College">College</button>
+            <button class="cat-tab" data-category="Work">Work</button>
+            <button class="cat-tab" data-category="Friends">Friends</button>
+            <button class="cat-tab" data-category="Family">Family</button>
+            <button class="cat-tab" data-category="Emergency">Emergency</button>
+          </nav>
+
+          <div class="view-and-sort-group">
+            <div class="sort-wrapper">
+              <span class="sort-prefix">Sort:</span>
+              <select id="sort-select" class="select-clean select-sort">
+                <option value="alphabetical">Alphabetical (AVL In-order)</option>
+                <option value="frequent">Most Contacted (Max-Heap)</option>
+                <option value="created_at">Recently Added</option>
+              </select>
+            </div>
+
+            <!-- Grid vs List View Switcher -->
+            <div class="view-toggle">
+              <button id="btn-view-grid" class="view-btn active" title="Grid View">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </button>
+              <button id="btn-view-list" class="view-btn" title="Compact List View">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contacts Container (Grid or Table View) -->
+      <section id="contacts-grid" class="contacts-wrapper view-grid" aria-label="Contacts List">
+        <!-- Rendered dynamically by app.js -->
+      </section>
+
+    </div>
+
+    <!-- Minimalist Secondary Rail -->
+    <aside class="sidebar-rail">
+
+      <!-- Priority Contacts Card (Max-Heap) -->
+      <div class="rail-card">
+        <div class="rail-header">
+          <div class="rail-title-group">
+            <h3 class="rail-title">Priority Contacts</h3>
+            <span class="algo-tag">MAX-HEAP</span>
+          </div>
+        </div>
+        <div id="frequent-list" class="frequent-rail-list">
+          <!-- Rendered dynamically by app.js -->
+        </div>
+      </div>
+
+      <!-- Algorithmic Benchmark Card -->
+      <div class="rail-card">
+        <div class="rail-header">
+          <div class="rail-title-group">
+            <h3 class="rail-title">Algorithm Benchmark</h3>
+            <span class="algo-tag">LIVE O(1) vs O(N)</span>
+          </div>
+        </div>
+
+        <div class="benchmark-minimal">
+          <div class="bench-stat-row">
+            <div class="bench-meta">
+              <span class="bench-label">Trie Autocomplete</span>
+              <span class="bench-complexity">O(L + M)</span>
+            </div>
+            <span id="bench-trie-us" class="bench-val val-green">0.15 μs</span>
+          </div>
+          <div class="meter-track">
+            <div id="bench-bar-trie" class="meter-fill fill-green" style="width: 15%;"></div>
+          </div>
+
+          <div class="bench-stat-row" style="margin-top: 0.85rem;">
+            <div class="bench-meta">
+              <span class="bench-label">Naive Linear Scan</span>
+              <span class="bench-complexity">O(N)</span>
+            </div>
+            <span id="bench-linear-us" class="bench-val val-muted">3.82 μs</span>
+          </div>
+          <div class="meter-track">
+            <div id="bench-bar-linear" class="meter-fill fill-muted" style="width: 85%;"></div>
+          </div>
+
+          <div class="bench-footer">
+            <span class="speedup-label">Efficiency Gain</span>
+            <span id="bench-speedup" class="speedup-val">25.5x faster</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- ADD / EDIT CONTACT MODAL                                                  -->
+  <!-- ========================================================================= -->
+  <div id="contact-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-heading">Add New Contact</h3>
+        <button id="btn-close-modal" class="modal-close-btn" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <form id="contact-form">
+        <div class="modal-content">
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label for="form-name" class="field-label">Full Name *</label>
+              <input type="text" id="form-name" class="field-input" required placeholder="e.g. Aditi Sharma">
+            </div>
+
+            <div class="form-field">
+              <label for="form-phone" class="field-label">Phone Number *</label>
+              <input type="tel" id="form-phone" class="field-input" required placeholder="+91 98765 43210">
+            </div>
+
+            <div class="form-field">
+              <label for="form-email" class="field-label">Email Address</label>
+              <input type="email" id="form-email" class="field-input" placeholder="aditi@example.com">
+            </div>
+
+            <div class="form-field">
+              <label for="form-category" class="field-label">Category</label>
+              <select id="form-category" class="field-input">
+                <option value="College">College</option>
+                <option value="Work">Work</option>
+                <option value="Friends">Friends</option>
+                <option value="Family">Family</option>
+                <option value="Emergency">Emergency</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="form-company" class="field-label">Organization / College</label>
+              <input type="text" id="form-company" class="field-input" placeholder="e.g. IIT Bombay / Google">
+            </div>
+
+            <div class="form-field full-width">
+              <label for="form-notes" class="field-label">Notes & Details</label>
+              <textarea id="form-notes" class="field-input field-textarea" placeholder="ADSA lab project partner, notes..."></textarea>
+            </div>
+
+            <div class="form-field full-width checkbox-row">
+              <label class="custom-checkbox-label">
+                <input type="checkbox" id="form-favorite" class="custom-checkbox">
+                <span>Star as Favorite (+100 Max-Heap Priority)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-modal" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Contact</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTACT PROFILE DRAWER                                                    -->
+  <!-- ========================================================================= -->
+  <div id="contact-drawer" class="modal-backdrop">
+    <div class="modal-box drawer-box">
+      <div class="modal-header">
+        <h3 class="modal-heading">Contact Details</h3>
+        <button id="btn-close-drawer" class="modal-close-btn" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-content">
+        <div class="drawer-profile-top">
+          <div id="drawer-avatar" class="drawer-avatar">--</div>
+          <div class="drawer-header-info">
+            <h4 id="drawer-name" class="drawer-name">--</h4>
+            <span id="drawer-category" class="category-pill-minimal">--</span>
+          </div>
+        </div>
+
+        <div class="drawer-meta-list">
+          <div class="drawer-meta-item">
+            <span class="drawer-meta-key">Phone</span>
+            <span id="drawer-phone" class="drawer-meta-val font-mono">--</span>
+          </div>
+          <div class="drawer-meta-item">
+            <span class="drawer-meta-key">Email</span>
+            <span id="drawer-email" class="drawer-meta-val">--</span>
+          </div>
+          <div class="drawer-meta-item">
+            <span class="drawer-meta-key">Organization</span>
+            <span id="drawer-company" class="drawer-meta-val">--</span>
+          </div>
+          <div class="drawer-meta-item">
+            <span class="drawer-meta-key">Heap Priority</span>
+            <span id="drawer-call-count" class="drawer-meta-val font-mono font-highlight">--</span>
+          </div>
+          <div class="drawer-notes-block">
+            <span class="drawer-meta-key">Notes</span>
+            <p id="drawer-notes" class="drawer-notes-text">--</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- ADSA INSPECTOR MODAL                                                      -->
+  <!-- ========================================================================= -->
+  <div id="adsa-modal" class="modal-backdrop">
+    <div class="modal-box inspector-modal-box">
+      <div class="modal-header">
+        <div class="inspector-header-left">
+          <h3 class="modal-heading">ADSA Algorithm Inspector</h3>
+          <span class="inspector-sub">Live Interactive Visualizer for Coursework Demonstration</span>
+        </div>
+        <div class="header-tools">
+          <button id="btn-refresh-adsa" class="btn btn-ghost btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            <span>Refresh</span>
+          </button>
+          <button id="btn-close-adsa-modal" class="modal-close-btn" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="inspector-tabs-bar">
+        <button class="tab-link active" data-tab="tab-avl">AVL Tree (Balanced BST)</button>
+        <button class="tab-link" data-tab="tab-graph">Relationship Graph (BFS)</button>
+        <button class="tab-link" data-tab="tab-fuzzy">Levenshtein DP Matrix</button>
+        <button class="tab-link" data-tab="tab-hashtable">Custom Hash Table</button>
+      </div>
+
+      <div class="inspector-tab-viewport">
+
+        <!-- TAB 1: AVL Tree Canvas -->
+        <div id="tab-avl" class="tab-pane active">
+          <div class="canvas-topbar">
+            <span class="canvas-legend">
+              <span class="dot-legend dot-green"></span> BF = 0 (Balanced)
+              <span class="dot-legend dot-amber" style="margin-left: 0.75rem;"></span> BF = ±1 (Valid)
+            </span>
+            <span id="avl-rotations-info" class="font-mono text-muted">Rotations: LL: 0 | RR: 0 | LR: 0 | RL: 0</span>
+          </div>
+          <div class="canvas-frame">
+            <canvas id="avl-canvas" class="render-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- TAB 2: Graph Canvas & BFS -->
+        <div id="tab-graph" class="tab-pane">
+          <div class="canvas-topbar">
+            <div class="bfs-controls">
+              <span class="control-label">Degrees of Separation:</span>
+              <select id="bfs-from-select" class="select-clean select-sm"></select>
+              <span class="control-arrow">→</span>
+              <select id="bfs-to-select" class="select-clean select-sm"></select>
+              <button id="btn-find-bfs-path" class="btn btn-primary btn-sm">Find Path (BFS)</button>
+            </div>
+            <div id="bfs-result-container" class="bfs-results-pill"></div>
+          </div>
+          <div class="canvas-frame">
+            <canvas id="graph-canvas" class="render-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- TAB 3: Levenshtein DP Matrix -->
+        <div id="tab-fuzzy" class="tab-pane">
+          <div class="dp-tester-top">
+            <input type="text" id="lev-word1" class="field-input input-sm" value="Smith" placeholder="Word 1" style="max-width: 140px;">
+            <input type="text" id="lev-word2" class="field-input input-sm" value="Smyth" placeholder="Word 2" style="max-width: 140px;">
+            <button id="btn-run-levenshtein" class="btn btn-primary btn-sm">Compute DP Table</button>
+            <span id="lev-distance-badge" class="badge-accent font-mono">Edit Distance: --</span>
+          </div>
+          <div id="lev-table-container" class="dp-scroll-box">
+            <!-- DP matrix dynamically generated -->
+          </div>
+        </div>
+
+        <!-- TAB 4: Hash Table Metrics -->
+        <div id="tab-hashtable" class="tab-pane">
+          <p class="tab-desc">
+            Custom <strong>ChainingHashTable</strong> using Polynomial Rolling Hash (Radix=31) and separate chaining buckets to guarantee O(1) average lookup and prevent phone collisions.
+          </p>
+          <div id="ht-stats-container" class="ht-metrics-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-hub"></div>
+
+  <!-- JavaScript Modules -->
+  <script src="/static/js/visualizer.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
